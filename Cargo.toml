@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["James Forcier <csssuf@csssuf.net>"]
 
 [dependencies]
+rustc-serialize = "*"
 bencode = "0.1.15"
 iron = "*"
 router = "*"
