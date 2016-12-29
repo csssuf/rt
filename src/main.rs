@@ -24,9 +24,10 @@ fn main() {
                              warning_message: "".to_string(),
                              interval: 1,
                              min_interval: 0,
+                             tracker_id: "t_id".to_string(),
                              complete: 1,
                              incomplete: 2,
-                             peer: vec!(peer::Peer { peer_id: "abc".to_string(), ip: "1.2.3.4".to_string(), port: 80 })
+                             peers: vec!(peer::Peer { peer_id: "abc".to_string(), ip: "1.2.3.4".to_string(), port: 80 })
                            };
         let result: Vec<u8> = encode(&s).unwrap();
         Ok(Response::with((status::Ok, result)))
