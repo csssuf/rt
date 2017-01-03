@@ -1,5 +1,6 @@
 use rustc_serialize::Encodable;
 use rustc_serialize::Encoder;
+use bencode::encode;
 
 #[derive(RustcEncodable)]
 pub struct Peer {
@@ -49,4 +50,17 @@ impl Encodable for RTResponse {
             Ok(())
         })
     }
+}
+
+#[derive(RustcEncodable)]
+struct FailureResponse {
+    pub failure_reason: String
+}
+
+pub fn generate_failure(s: &str) -> Vec<u8> {
+    encode(
+        FailureResponse {
+         failure_reason: s.to_string(),
+        }
+    ).unwrap()
 }
