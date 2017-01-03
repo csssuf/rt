@@ -1,7 +1,12 @@
 use rustc_serialize::Encodable;
 use rustc_serialize::Encoder;
 
-use peer;
+#[derive(RustcEncodable)]
+pub struct Peer {
+    pub peer_id: String,
+    pub ip: String,
+    pub port: u16
+}
 
 pub struct RTResponse {
     pub failure_reason: String,
@@ -11,7 +16,7 @@ pub struct RTResponse {
     pub tracker_id: String,
     pub complete: u32,
     pub incomplete: u32,
-    pub peers: Vec<peer::Peer>
+    pub peers: Vec<Peer>
 }
 
 impl Encodable for RTResponse {

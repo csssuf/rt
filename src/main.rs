@@ -8,8 +8,7 @@ use iron::status;
 use router::Router;
 use bencode::encode;
 
-mod rtresponse;
-mod peer;
+mod proto;
 
 fn main() {
     let router = router!{
@@ -19,16 +18,16 @@ fn main() {
     Iron::new(router).http("localhost:3000").unwrap();
 
     fn root_handler(r: &mut Request) -> IronResult<Response> {
-        let s = rtresponse::RTResponse {
-                             failure_reason: "".to_string(),
-                             warning_message: "".to_string(),
-                             interval: 1,
-                             min_interval: 0,
-                             tracker_id: "t_id".to_string(),
-                             complete: 1,
-                             incomplete: 2,
-                             peers: vec!(peer::Peer { peer_id: "abc".to_string(), ip: "1.2.3.4".to_string(), port: 80 })
-                           };
+        let s = proto::RTResponse {
+                        failure_reason: "".to_string(),
+                        warning_message: "".to_string(),
+                        interval: 1,
+                        min_interval: 0,
+                        tracker_id: "t_id".to_string(),
+                        complete: 1,
+                        incomplete: 2,
+                        peers: vec!(proto::Peer { peer_id: "abc".to_string(), ip: "1.2.3.4".to_string(), port: 80 })
+                       };
         let result: Vec<u8> = encode(&s).unwrap();
         Ok(Response::with((status::Ok, result)))
     }
