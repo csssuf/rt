@@ -6,6 +6,7 @@ authors = ["James Forcier <csssuf@csssuf.net>"]
 [dependencies]
 rustc-serialize = "*"
 bencode = "0.1.15"
-iron = "0.4.*"
-router = "0.4.*"
+iron = "0.5.*"
+router = "*"
 params = "*"
+persistent = "*"
