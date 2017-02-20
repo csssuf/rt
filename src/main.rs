@@ -52,6 +52,8 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
     println!("{:?}", params);
 
     match params.find(&["info_hash"]) {
+        // First check if it's already in the list so we can decide whether or not to create and
+        // insert a new torrent.
         Some(&Value::String(ref info_hash)) => {
             let mut found = false;
             {
@@ -67,8 +69,9 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                         println!("Torrent not found, adding.");
                     }
                 }
-            }
+            } // list_ro goes out of scope
 
+            // Generate new peer for this call to /announce
             let new_peer = tracker::RTPeer::new(
                 params.find(&["peer_id"]),
                 params.find(&["port"]),
@@ -79,11 +82,14 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                 params.find(&["key"])
             );
 
+            // Make sure RTPeer::new succeeded
             match new_peer {
                 Ok(val) => {
                     let mut list_rw = mutex.write().unwrap();
 
                     if !found {
+                        // If this is a new torrent, create the new torrent and initialize its peer
+                        // list
                         let mut new_torrent = tracker::Torrent::new(info_hash.clone());
                         new_torrent.peers.push(val.clone());
                         list_rw.insert(info_hash.clone(), new_torrent);
@@ -92,9 +98,11 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                     match list_rw.get_mut(info_hash) {
                         Some(torrent) => {
                             if found {
+                                // If not new torrent, we need to add new peer
                                 torrent.peers.push(val.clone());
                             }
 
+                            // Calculate complete and incomplete peers
                             let complete = torrent.peers.to_vec()
                                                         .into_iter()
                                                         .filter(|v| v.left == 0)
@@ -102,6 +110,7 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                                                         .len();
                             let incomplete = torrent.peers.len() - complete;
 
+                            // Build RTResponse
                             let result_struct = proto::RTResponse {
                                 interval: 1800,
                                 tracker_id: "something".to_string(),
@@ -116,6 +125,7 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                                                     })
                                                     .collect::<Vec<_>>()
                             };
+                            
                             result = encode(result_struct).unwrap();
                         },
                         None => {
