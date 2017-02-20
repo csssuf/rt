@@ -4,6 +4,7 @@ extern crate rustc_serialize;
 extern crate bencode;
 extern crate params;
 extern crate persistent;
+extern crate clap;
 
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -12,6 +13,7 @@ use iron::typemap::Key;
 use iron::status;
 use persistent::State;
 use bencode::encode;
+use clap::{Arg, App};
 
 mod proto;
 mod tracker;
@@ -25,6 +27,20 @@ impl Key for TorrentList {
 }
 
 fn main() {
+    let opt_matches = App::new("rt")
+                            .version("0.1")
+                            .author("James Forcier <csssuf@csssuf.net>")
+                            .about("bittorrent tracker")
+                            .arg(Arg::with_name("config")
+                                 .short("c")
+                                 .long("config")
+                                 .value_name("FILE")
+                                 .help("Config file to use")
+                                 .takes_value(true))
+                            .get_matches();
+
+    let config = opt_matches.value_of("config").unwrap_or("rt.conf");
+
     let router = router!{
         get_slash: get "/" => root_handler,
         announce: get "/announce" => announce_handler
