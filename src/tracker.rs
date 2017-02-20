@@ -16,14 +16,14 @@ impl Torrent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RTPeer {
-    peer_id: String,
-    port: u16,
-    uploaded: u32,
-    downloaded: u32,
-    left: u32,
-    ip: String,
+    pub peer_id: String,
+    pub port: u16,
+    pub uploaded: u32,
+    pub downloaded: u32,
+    pub left: u32,
+    pub ip: String,
     key: String
 }
 

@@ -11,9 +11,11 @@ use iron::prelude::*;
 use iron::typemap::Key;
 use iron::status;
 use persistent::State;
+use bencode::encode;
 
 mod proto;
 mod tracker;
+mod util;
 
 #[derive(Clone, Copy)]
 pub struct TorrentList;
@@ -44,6 +46,7 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
 
     let mut result: Vec<u8> = vec![];
     
+    let remote_addr = r.remote_addr;
     let params = r.get::<Params>().unwrap();
     let mutex = r.get_mut::<State<TorrentList>>().unwrap();
     println!("{:?}", params);
@@ -58,7 +61,20 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                 match list_ro.get(info_hash) {
                     Some(torrent) => {
                         println!("Torrent found: {:?}", torrent);
-                        result = proto::generate_failure("It worked but peer lists are still unimplemented");
+                        // Calculate complete and incomplete
+                        let _peer_copy = torrent.peers.to_vec();
+                        let complete = _peer_copy.into_iter().filter(|v| v.left == 0).collect::<Vec<_>>().len();
+                        let incomplete = torrent.peers.len() - complete;
+
+                        // build result struct
+                        let result_struct = proto::RTResponse {
+                            interval: 3600,
+                            tracker_id: "something".to_string(),
+                            complete: complete as u32,
+                            incomplete: incomplete as u32,
+                            peers: torrent.peers.to_vec().into_iter().map(|v| proto::Peer { peer_id: v.peer_id, ip: v.ip, port: v.port }).collect::<Vec<_>>()
+                        };
+                        result = encode(result_struct).unwrap();
                         done = true;
                     },
                     None => {
@@ -75,7 +91,7 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                     params.find(&["uploaded"]),
                     params.find(&["downloaded"]),
                     params.find(&["left"]),
-                    Some("".to_string()),
+                    Some(util::sock2str(&remote_addr)),
                     params.find(&["key"])
                 );
 
