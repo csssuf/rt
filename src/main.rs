@@ -5,9 +5,14 @@ extern crate bencode;
 extern crate params;
 extern crate persistent;
 extern crate clap;
+#[macro_use] extern crate serde_derive;
 
 use std::collections::HashMap;
+use std::error::Error;
+use std::fs::File;
+use std::io::prelude::*;
 use std::ops::Deref;
+use std::path::Path;
 use iron::prelude::*;
 use iron::typemap::Key;
 use iron::status;
@@ -39,7 +44,22 @@ fn main() {
                                  .takes_value(true))
                             .get_matches();
 
-    let config = opt_matches.value_of("config").unwrap_or("rt.conf");
+    let config_path_str = opt_matches.value_of("config").unwrap_or("rt.conf");
+
+    let config_path = Path::new(config_path_str);
+    let config_path_disp = config_path.display();
+    let mut config_file = match File::open(&config_path) {
+        Err(reason) => panic!("couldn't open {}: {}", config_path_disp, reason.description()),
+        Ok(file) => file
+    };
+
+    let mut config_str = String::new();
+    match config_file.read_to_string(&mut config_str) {
+        Err(reason) => panic!("couldn't read {}: {}", config_path_disp, reason.description()),
+        Ok(_) => println!("Using config file {}", config_path_disp),
+    }
+
+    let config = util::parse_config(&config_str);
 
     let router = router!{
         get_slash: get "/" => root_handler,
@@ -49,7 +69,11 @@ fn main() {
     let mut chain = Chain::new(router);
     chain.link(State::<TorrentList>::both(HashMap::new()));
 
-    Iron::new(chain).http("0.0.0.0:3000").unwrap();
+    let mut listen = String::from(config.core.bindaddress);
+    listen.push(':');
+    listen.push_str(&(format!("{}", config.core.port)));
+
+    Iron::new(chain).http(listen.as_str()).unwrap();
 }
 
 fn root_handler(r: &mut Request) -> IronResult<Response> {
