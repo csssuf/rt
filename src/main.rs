@@ -135,10 +135,15 @@ fn announce_handler(r: &mut Request) -> IronResult<Response> {
                         list_rw.insert(info_hash.clone(), new_torrent);
                     }
 
+                    // Get Torrent from list
                     match list_rw.get_mut(info_hash) {
                         Some(torrent) => {
                             if found {
-                                // If not new torrent, we need to add new peer
+                                // If not new torrent, we need to remove old peers with the same
+                                // peer_id
+                                torrent.peers.retain(|p| p.peer_id != val.peer_id);
+
+                                // And add new peer
                                 torrent.peers.push(val.clone());
                             }
 
