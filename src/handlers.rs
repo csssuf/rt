@@ -130,3 +130,16 @@ pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
 
     Ok(Response::with((status::Ok, result)))
 }
+
+pub fn stats_handler(r: &mut Request) -> IronResult<Response> {
+    let torrent_list = r.get_mut::<State<TorrentList>>().unwrap().read().unwrap();
+
+    let peer_list_list = torrent_list.values()
+                                     .map(|torrent| torrent.peers.clone())
+                                     .collect::<Vec<_>>();
+    let peerno = peer_list_list.into_iter()
+                               .fold(0, |acc, peerlist| acc + peerlist.len());
+
+    let result = format!("{} torrents with {} peers.", torrent_list.len(), peerno);
+    Ok(Response::with((status::Ok, result)))
+}

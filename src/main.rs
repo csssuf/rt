@@ -53,7 +53,8 @@ fn main() {
 
     let router = router!{
         get_slash: get "/" => handlers::root_handler,
-        announce: get "/announce" => handlers::announce_handler
+        announce: get "/announce" => handlers::announce_handler,
+        stats: get "/stats" => handlers::stats_handler
     };
 
     let mut chain = Chain::new(router);
