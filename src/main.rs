@@ -12,6 +12,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::sync::{Arc, RwLock};
 use iron::prelude::*;
 use persistent::State;
 use clap::{Arg, App};
@@ -57,8 +58,11 @@ fn main() {
         stats: get "/stats" => handlers::stats_handler
     };
 
+    let torrents: Arc<RwLock<HashMap<std::string::String, tracker::Torrent>>>
+        = Arc::new(RwLock::new(HashMap::new()));
+
     let mut chain = Chain::new(router);
-    chain.link(State::<handlers::TorrentList>::both(HashMap::new()));
+    chain.link(State::<handlers::TorrentList>::both(torrents));
 
     let listen = format!("{}:{}", config.core.bindaddress, config.core.port);
 
