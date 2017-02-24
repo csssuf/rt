@@ -17,8 +17,7 @@ impl Key for TorrentList {
     type Value = HashMap<String, ::tracker::Torrent>;
 }
 
-#[allow(unused_variables)]
-pub fn root_handler(r: &mut Request) -> IronResult<Response> {
+pub fn root_handler(_r: &mut Request) -> IronResult<Response> {
     let result: Vec<u8> = ::proto::generate_failure("No torrent specified");
     Ok(Response::with((status::Ok, result)))
 }
@@ -26,7 +25,7 @@ pub fn root_handler(r: &mut Request) -> IronResult<Response> {
 pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
     use params::{Params, Value};
 
-    let mut result: Vec<u8> = vec![];
+    let result: Vec<u8>;
     
     let remote_addr = r.remote_addr;
     let params = r.get::<Params>().unwrap();
