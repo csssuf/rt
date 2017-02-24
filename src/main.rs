@@ -69,9 +69,7 @@ fn main() {
     let mut chain = Chain::new(router);
     chain.link(State::<TorrentList>::both(HashMap::new()));
 
-    let mut listen = String::from(config.core.bindaddress);
-    listen.push(':');
-    listen.push_str(&(format!("{}", config.core.port)));
+    let listen = format!("{}:{}", config.core.bindaddress, config.core.port);
 
     Iron::new(chain).http(listen.as_str()).unwrap();
 }
