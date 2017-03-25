@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+use std::time::Instant;
 use params;
 use params::{Value, FromValue};
 
@@ -102,3 +104,52 @@ impl RTPeer {
         })
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct ExpiryPeer {
+    pub peer_id: String,
+    pub torrent_info_hash: String,
+    pub expiry: Instant
+}
+
+impl ExpiryPeer {
+    pub fn new(peer_id: Option<&params::Value>,
+            torrent_info_hash: Option<&params::Value>) -> Result<ExpiryPeer, &'static str>{
+        let _peer_id: String;
+        let _torrent_info_hash: String;
+
+        match peer_id {
+            Some(&Value::String(ref found)) => { _peer_id = found.clone(); },
+            _ => { return Err("No peer_id provided"); }
+        }
+        match torrent_info_hash {
+            Some(&Value::String(ref found)) => { _torrent_info_hash = found.clone(); },
+            _ => { return Err("No torrent_info_hash provided"); }
+        }
+        Ok(ExpiryPeer {
+            peer_id: _peer_id,
+            torrent_info_hash: _torrent_info_hash,
+            expiry: Instant::now()
+        })
+    }
+}
+
+impl Ord for ExpiryPeer {
+    fn cmp(&self, other: &ExpiryPeer) -> Ordering {
+        self.expiry.cmp(&other.expiry)
+    }
+}
+
+impl PartialOrd for ExpiryPeer {
+    fn partial_cmp(&self, other: &ExpiryPeer) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for ExpiryPeer {
+    fn eq(&self, other: &ExpiryPeer) -> bool {
+        self.expiry == other.expiry
+    }
+}
+
+impl Eq for ExpiryPeer {}

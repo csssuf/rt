@@ -7,7 +7,7 @@ extern crate persistent;
 extern crate clap;
 #[macro_use] extern crate serde_derive;
 
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
@@ -60,9 +60,15 @@ fn main() {
 
     let torrents: Arc<RwLock<HashMap<std::string::String, tracker::Torrent>>>
         = Arc::new(RwLock::new(HashMap::new()));
+    let _torrents = torrents.clone();
+
+    let expiry_list: Arc<RwLock<BinaryHeap<tracker::ExpiryPeer>>>
+        = Arc::new(RwLock::new(BinaryHeap::new()));
+    let _expiry_list = expiry_list.clone();
 
     let mut chain = Chain::new(router);
-    chain.link(State::<handlers::TorrentList>::both(torrents));
+    chain.link(State::<handlers::TorrentList>::both(_torrents));
+    chain.link(State::<handlers::ExpiryList>::both(_expiry_list));
 
     let listen = format!("{}:{}", config.core.bindaddress, config.core.port);
 

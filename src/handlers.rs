@@ -2,7 +2,7 @@ extern crate iron;
 extern crate persistent;
 extern crate bencode;
 
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
 use std::ops::Deref;
 use iron::prelude::*;
 use iron::typemap::Key;
@@ -15,6 +15,13 @@ pub struct TorrentList;
 
 impl Key for TorrentList {
     type Value = HashMap<String, ::tracker::Torrent>;
+}
+
+#[derive(Clone, Copy)]
+pub struct ExpiryList;
+
+impl Key for ExpiryList {
+    type Value = BinaryHeap<::tracker::ExpiryPeer>;
 }
 
 pub fn root_handler(_r: &mut Request) -> IronResult<Response> {
