@@ -2,8 +2,9 @@ extern crate iron;
 extern crate persistent;
 extern crate bencode;
 
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
+use std::time::Instant;
 use iron::prelude::*;
 use iron::typemap::Key;
 use iron::status;
@@ -21,7 +22,7 @@ impl Key for TorrentList {
 pub struct ExpiryList;
 
 impl Key for ExpiryList {
-    type Value = BinaryHeap<::tracker::ExpiryPeer>;
+    type Value = ::expiry::ExpiryMap;
 }
 
 pub fn root_handler(_r: &mut Request) -> IronResult<Response> {
@@ -36,6 +37,7 @@ pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
     
     let remote_addr = r.remote_addr;
     let params = r.get::<Params>().unwrap();
+    let expiry_mutex = r.get::<State<ExpiryList>>().unwrap();
     let mutex = r.get_mut::<State<TorrentList>>().unwrap();
     println!("{:?}", params);
 
@@ -126,6 +128,20 @@ pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
                         }
                     }
 
+                    // Insert ExpiryPeer too
+                    let new_expiry_peer = ::tracker::ExpiryPeer::new(
+                        params.find(&["peer_id"]),
+                        info_hash.clone()
+                    );
+
+                    match new_expiry_peer {
+                        Ok(val) => {
+                            // Insert into map
+                            let mut expiry_map = expiry_mutex.write().unwrap();
+                            expiry_map.upsert_peer(val);
+                        },
+                        _ => {}
+                    }
                 },
                 _ => { result = ::proto::generate_failure("Error generating peer"); }
             }

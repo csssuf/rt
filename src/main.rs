@@ -7,12 +7,15 @@ extern crate persistent;
 extern crate clap;
 #[macro_use] extern crate serde_derive;
 
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
+use std::ops::Deref;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
+use std::thread;
+use std::time::{Duration, Instant};
 use iron::prelude::*;
 use persistent::State;
 use clap::{Arg, App};
@@ -21,6 +24,7 @@ mod proto;
 mod tracker;
 mod util;
 mod handlers;
+mod expiry;
 
 fn main() {
     let opt_matches = App::new("rt")
@@ -62,13 +66,24 @@ fn main() {
         = Arc::new(RwLock::new(HashMap::new()));
     let _torrents = torrents.clone();
 
-    let expiry_list: Arc<RwLock<BinaryHeap<tracker::ExpiryPeer>>>
-        = Arc::new(RwLock::new(BinaryHeap::new()));
+    let expiry_list: Arc<RwLock<expiry::ExpiryMap>>
+        = Arc::new(RwLock::new(expiry::ExpiryMap::new()));
     let _expiry_list = expiry_list.clone();
 
     let mut chain = Chain::new(router);
     chain.link(State::<handlers::TorrentList>::both(_torrents));
     chain.link(State::<handlers::ExpiryList>::both(_expiry_list));
+
+    let torrents = torrents.clone();
+
+    // Build a thread that periodically checks for expired peers
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(5000));
+            let expiry_map = expiry_list.read().unwrap();
+            println!("{:?}", expiry_map.deref());
+        }
+    });
 
     let listen = format!("{}:{}", config.core.bindaddress, config.core.port);
 
