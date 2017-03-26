@@ -7,15 +7,14 @@ extern crate persistent;
 extern crate clap;
 #[macro_use] extern crate serde_derive;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
-use std::ops::Deref;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use iron::prelude::*;
 use persistent::State;
 use clap::{Arg, App};
@@ -75,13 +74,22 @@ fn main() {
     chain.link(State::<handlers::ExpiryList>::both(_expiry_list));
 
     let torrents = torrents.clone();
+    let announce_time = config.torrents.announcetime;
 
     // Build a thread that periodically checks for expired peers
     thread::spawn(move || {
         loop {
             thread::sleep(Duration::from_millis(5000));
-            let expiry_map = expiry_list.read().unwrap();
-            println!("{:?}", expiry_map.deref());
+
+            let mut expiry_map = expiry_list.write().unwrap();
+            //println!("{:?}", expiry_map.deref());
+
+            let mut torrent_list = torrents.write().unwrap();
+            //println!("{:?}", torrent_list.deref());
+
+            for ex_peer in expiry_map.get_expired_peers(Duration::new(announce_time as u64, 0)) {
+                torrent_list.remove(&ex_peer.torrent_info_hash);
+            }
         }
     });
 

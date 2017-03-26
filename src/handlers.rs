@@ -2,9 +2,8 @@ extern crate iron;
 extern crate persistent;
 extern crate bencode;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::ops::Deref;
-use std::time::Instant;
 use iron::prelude::*;
 use iron::typemap::Key;
 use iron::status;
