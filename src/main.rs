@@ -88,7 +88,9 @@ fn main() {
             //println!("{:?}", torrent_list.deref());
 
             for ex_peer in expiry_map.get_expired_peers(Duration::new(announce_time as u64, 0)) {
-                torrent_list.remove(&ex_peer.torrent_info_hash);
+                if let Some(mut torrent) = torrent_list.get_mut(&ex_peer.torrent_info_hash) {
+                    torrent.peers.retain(|p| p.peer_id != ex_peer.peer_id);
+                }
             }
         }
     });
