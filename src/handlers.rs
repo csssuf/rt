@@ -3,7 +3,6 @@ extern crate persistent;
 extern crate bencode;
 
 use std::collections::HashMap;
-use std::ops::Deref;
 use iron::prelude::*;
 use iron::typemap::Key;
 use iron::status;
@@ -44,22 +43,6 @@ pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
         // First check if it's already in the list so we can decide whether or not to create and
         // insert a new torrent.
         Some(&Value::String(ref info_hash)) => {
-            let mut found = false;
-            {
-                let _list_ro = mutex.read().unwrap();
-                let list_ro = _list_ro.deref();
-
-                match list_ro.get(info_hash) {
-                    Some(torrent) => {
-                        println!("Torrent found: {:?}", torrent);
-                        found = true;
-                    },
-                    None => {
-                        println!("Torrent not found, adding.");
-                    }
-                }
-            } // list_ro goes out of scope
-
             // Generate new peer for this call to /announce
             let new_peer = ::tracker::RTPeer::new(
                 params.find(&["peer_id"]),
@@ -76,25 +59,19 @@ pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
                 Ok(val) => {
                     let mut list_rw = mutex.write().unwrap();
 
-                    if !found {
+                    if !list_rw.contains_key(info_hash) {
                         // If this is a new torrent, create the new torrent and initialize its peer
                         // list
-                        let mut new_torrent = ::tracker::Torrent::new(info_hash.clone());
-                        new_torrent.peers.push(val.clone());
+                        let new_torrent = ::tracker::Torrent::new(info_hash.clone());
                         list_rw.insert(info_hash.clone(), new_torrent);
                     }
 
                     // Get Torrent from list
                     match list_rw.get_mut(info_hash) {
                         Some(torrent) => {
-                            if found {
-                                // If not new torrent, we need to remove old peers with the same
-                                // peer_id
-                                torrent.peers.retain(|p| p.peer_id != val.peer_id);
-
-                                // And add new peer
-                                torrent.peers.push(val.clone());
-                            }
+                            // Remove old peers with the same ID; push new peer
+                            torrent.peers.retain(|p| p.peer_id != val.peer_id);
+                            torrent.peers.push(val.clone());
 
                             // Calculate complete and incomplete peers
                             let complete = torrent.peers.to_vec()
