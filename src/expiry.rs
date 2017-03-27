@@ -18,17 +18,12 @@ impl ExpiryMap {
     pub fn upsert_peer(&mut self, peer: ::tracker::ExpiryPeer) {
         let now = Instant::now();
 
-        if self.peer_map.contains_key(&peer) {
-            let old_expiry = self.peer_map.get(&peer).unwrap().clone();
-
-            self.peer_map.insert(peer.clone(), now);
-
-            self.expiry_map.remove(&old_expiry);
-            self.expiry_map.insert(now, peer.clone());
-        } else {
-            self.peer_map.insert(peer.clone(), now);
-            self.expiry_map.insert(now, peer.clone());
+        if let Some(peer_val) = self.peer_map.get(&peer) {
+            self.expiry_map.remove(peer_val);
         }
+
+        self.peer_map.insert(peer.clone(), now);
+        self.expiry_map.insert(now, peer.clone());
     }
 
     pub fn get_expired_peers(&mut self, max_age: Duration) -> Vec<::tracker::ExpiryPeer> {

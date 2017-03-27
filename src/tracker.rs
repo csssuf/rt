@@ -103,7 +103,7 @@ impl RTPeer {
     }
 }
 
-#[derive(Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash, PartialEq)]
 pub struct ExpiryPeer {
     pub peer_id: String,
     pub torrent_info_hash: String,
@@ -123,12 +123,6 @@ impl ExpiryPeer {
             peer_id: _peer_id,
             torrent_info_hash: torrent_info_hash
         })
-    }
-}
-
-impl PartialEq for ExpiryPeer {
-    fn eq(&self, other: &ExpiryPeer) -> bool {
-        self.peer_id == other.peer_id && self.torrent_info_hash == other.torrent_info_hash
     }
 }
 

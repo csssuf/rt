@@ -128,18 +128,10 @@ pub fn announce_handler(r: &mut Request) -> IronResult<Response> {
                     }
 
                     // Insert ExpiryPeer too
-                    let new_expiry_peer = ::tracker::ExpiryPeer::new(
-                        params.find(&["peer_id"]),
-                        info_hash.clone()
-                    );
-
-                    match new_expiry_peer {
-                        Ok(val) => {
-                            // Insert into map
-                            let mut expiry_map = expiry_mutex.write().unwrap();
-                            expiry_map.upsert_peer(val);
-                        },
-                        _ => {}
+                    if let Ok(new_expiry_peer) = ::tracker::ExpiryPeer::new(params.find(&["peer_id"]),
+                                                                            info_hash.clone()) {
+                        let mut expiry_map = expiry_mutex.write().unwrap();
+                        expiry_map.upsert_peer(new_expiry_peer);
                     }
                 },
                 _ => { result = ::proto::generate_failure("Error generating peer"); }
